@@ -2,15 +2,13 @@
 WORKDIR /src
 COPY . .
 
-RUN dotnet restore "App/App.csproj"
-COPY . .
-WORKDIR "/src/App"
-RUN dotnet build "App.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet restore "App.csproj" --disable-parallel
+RUN dotnet publish "App.csproj" -c release -o /app --no-restore
 
-FROM build AS publish
-RUN dotnet publish "App.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app ./
+
+EXPOSE 5000
+
 ENTRYPOINT ["dotnet", "App.dll"]
